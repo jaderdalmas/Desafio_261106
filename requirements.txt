@@ -4,7 +4,6 @@ numpy
 pulp[cbc]>=3.3,<4
 highspy>=1.10
 matplotlib
-pyyaml
 fastapi
 uvicorn
 pytest

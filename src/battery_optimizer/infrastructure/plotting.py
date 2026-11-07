@@ -7,6 +7,4 @@ def save_profit(value):
 
     ax.bar(["profit"], [value])
 
-    fig.savefig(
-        "outputs/profit.png"
-    )
+    fig.savefig("outputs/profit.png")

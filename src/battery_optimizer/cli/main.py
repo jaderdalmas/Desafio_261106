@@ -18,9 +18,11 @@ from battery_optimizer.infrastructure.excel_loader import (
 
 def _format_dispatch_row(dispatch_row: dict[str, object]) -> list[str]:
     return [
-        pd.Timestamp(value).strftime("%Y-%m-%dT%H:%M:%S")
-        if field == "timestamp"
-        else f"{float(value):.10f}"
+        (
+            pd.Timestamp(value).strftime("%Y-%m-%dT%H:%M:%S")
+            if field == "timestamp"
+            else f"{float(value):.10f}"
+        )
         for field, value in dispatch_row.items()
     ]
 
@@ -49,7 +51,9 @@ def _completed_dispatch_profit(output: Path, timestamps: pd.Series) -> float | N
             if index >= len(timestamps):
                 raise ValueError(f"existing result file has extra rows: {output}")
             if len(row) != len(expected_fields):
-                raise ValueError(f"existing result file has an invalid row: {index + 1}")
+                raise ValueError(
+                    f"existing result file has an invalid row: {index + 1}"
+                )
             expected_timestamp = pd.Timestamp(timestamps.iloc[index]).strftime(
                 "%Y-%m-%dT%H:%M:%S"
             )

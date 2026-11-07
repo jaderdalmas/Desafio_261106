@@ -12,8 +12,13 @@ class OptimiseDispatch:
         self,
         market1,
         market2,
+        *,
+        time_limit: float | None = None,
+        msg: bool = False,
     ):
         return self.solver.solve(
             market1,
             market2,
+            time_limit=time_limit,
+            msg=msg,
         )

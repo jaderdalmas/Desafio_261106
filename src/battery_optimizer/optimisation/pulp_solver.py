@@ -5,6 +5,8 @@ from pulp import (
     HiGHS,
     LpMaximize,
     LpProblem,
+    LpSolutionNoSolutionFound,
+    LpSolutionOptimal,
     LpStatus,
     lpSum,
     value,
@@ -21,6 +23,9 @@ class PulpSolver:
         self,
         market1: pd.DataFrame,
         market2: pd.DataFrame,
+        *,
+        time_limit: float | None = None,
+        msg: bool = False,
     ) -> dict[str, object]:
         prices1, prices2 = self._validated_prices(market1, market2)
         horizon = len(prices1)
@@ -88,14 +93,15 @@ class PulpSolver:
         model += lpSum(interval_profit)
         model.solve(
             HiGHS(
-                msg=False,
+                msg=msg,
                 threads=1,
                 random_seed=0,
+                timeLimit=time_limit,
             )
         )
 
         status = LpStatus[model.status]
-        if status != "Optimal":
+        if status != "Optimal" or model.sol_status == LpSolutionNoSolutionFound:
             raise RuntimeError(f"battery dispatch optimization failed: {status}")
 
         dispatch = []
@@ -117,6 +123,7 @@ class PulpSolver:
         return {
             "profit": float(value(model.objective)),
             "dispatch": dispatch,
+            "optimal": model.sol_status == LpSolutionOptimal,
         }
 
     @staticmethod

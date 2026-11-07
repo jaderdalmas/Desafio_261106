@@ -34,8 +34,16 @@ The solver runs HiGHS with a single thread and a fixed seed. Hourly Market 2
 commitments use one decision variable per hour instead of duplicated
 half-hourly variables. The solver writes the dispatch to
 `results/dispatch.csv`; use `--output path/to/file.csv` to choose another
-location. Re-running with the same input workbooks and solver version produces
-the same schedule.
+location. Each solved dispatch interval is flushed to the result file as it is
+written. If a run is interrupted during result writing, rerunning with the same
+inputs and output path validates the saved rows and appends the remaining
+intervals. Existing rows that do not match the newly computed schedule are
+rejected rather than overwritten. The full-horizon optimization is recalculated
+on rerun; saved rows let the CLI resume output writing, not the solver itself.
+The CLI displays solver progress and limits optimization to 60 seconds by
+default. If it finds a feasible schedule but cannot prove it optimal in that
+time, it saves and reports the best feasible schedule. Use
+`--time-limit seconds` to change the limit.
 
 The CLI reads `data/battery_parameters.xlsx` and `data/market_prices.xlsx`.
 The battery workbook supplies capacity, charge/discharge rates, and efficiency

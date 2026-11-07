@@ -1,32 +1,22 @@
 from battery_optimizer.application.optimise_dispatch import (
     OptimiseDispatch,
 )
-
-from battery_optimizer.infrastructure.config_loader import (
-    load_battery_config,
-)
-
-from battery_optimizer.infrastructure.csv_loader import (
-    CsvLoader,
-)
-
 from battery_optimizer.application.timeline_service import (
     TimelineService,
+)
+from battery_optimizer.infrastructure.excel_loader import (
+    ExcelLoader,
 )
 
 
 def main():
 
-    battery = load_battery_config(
-        "configs/battery.yaml"
+    battery = ExcelLoader.load_battery(
+        "data/battery_parameters.xlsx"
     )
 
-    market1 = CsvLoader.load(
-        "data/market1.csv"
-    )
-
-    market2 = CsvLoader.load(
-        "data/market2.csv"
+    market1, market2 = ExcelLoader.load_markets(
+        "data/market_prices.xlsx"
     )
 
     market2 = (
@@ -35,6 +25,7 @@ def main():
             market2
         )
     )
+    market2 = TimelineService.align_hourly_market(market1, market2)
 
     result = (
         OptimiseDispatch(battery)

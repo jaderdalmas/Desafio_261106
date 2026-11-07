@@ -27,8 +27,15 @@ API
 
 ```bash
 pip install -e .
-python -m src.battery_optimizer.cli.main
+python -m battery_optimizer.cli.main
 ```
+
+The CLI reads `data/battery_parameters.xlsx` and `data/market_prices.xlsx`.
+The battery workbook supplies capacity, charge/discharge rates, and efficiency
+losses. Since it does not specify an initial state of charge, the optimizer
+starts at 50% of capacity. The market workbook must contain sheets named
+`Half-hourly data` and `Hourly data`. Hourly prices are expanded to
+half-hourly intervals before optimization.
 
 ## Tests
 
@@ -38,7 +45,6 @@ pytest
 
 ## Future Improvements
 
-- Battery efficiency
 - Degradation costs
 - OR-Tools solver
 - Gurobi solver

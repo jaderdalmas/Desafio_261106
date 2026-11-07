@@ -1,6 +1,7 @@
 pandas
+openpyxl
 numpy
-pulp
+pulp[cbc]>=3.3,<4
 matplotlib
 pyyaml
 fastapi

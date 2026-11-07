@@ -26,42 +26,34 @@ class PulpSolver:
             LpMaximize,
         )
 
-        charge1 = LpVariable.dicts(
-            "charge1",
-            range(horizon),
-            lowBound=0,
-        )
-
-        discharge1 = LpVariable.dicts(
-            "discharge1",
-            range(horizon),
-            lowBound=0,
-        )
-
-        charge2 = LpVariable.dicts(
-            "charge2",
-            range(horizon),
-            lowBound=0,
-        )
-
-        discharge2 = LpVariable.dicts(
-            "discharge2",
-            range(horizon),
-            lowBound=0,
-        )
-
-        soc = LpVariable.dicts(
-            "soc",
-            range(horizon + 1),
-            lowBound=0,
-            upBound=self.battery.capacity_mwh,
-        )
-
-        mode = LpVariable.dicts(
-            "mode",
-            range(horizon),
-            cat="Binary",
-        )
+        charge1 = {
+            t: model.add_variable(f"charge1_{t}", lowBound=0)
+            for t in range(horizon)
+        }
+        discharge1 = {
+            t: model.add_variable(f"discharge1_{t}", lowBound=0)
+            for t in range(horizon)
+        }
+        charge2 = {
+            t: model.add_variable(f"charge2_{t}", lowBound=0)
+            for t in range(horizon)
+        }
+        discharge2 = {
+            t: model.add_variable(f"discharge2_{t}", lowBound=0)
+            for t in range(horizon)
+        }
+        soc = {
+            t: model.add_variable(
+                f"soc_{t}",
+                lowBound=0,
+                upBound=self.battery.capacity_mwh,
+            )
+            for t in range(horizon + 1)
+        }
+        mode = {
+            t: model.add_variable(f"mode_{t}", cat="Binary")
+            for t in range(horizon)
+        }
 
         model += (
             soc[0]
@@ -102,11 +94,11 @@ class PulpSolver:
                 + dt * (
                     charge1[t]
                     + charge2[t]
-                )
+                ) * self.battery.charge_efficiency
                 - dt * (
                     discharge1[t]
                     + discharge2[t]
-                )
+                ) / self.battery.discharge_efficiency
             )
 
         for h in range(0, horizon, 2):

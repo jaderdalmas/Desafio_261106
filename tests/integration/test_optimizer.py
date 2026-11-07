@@ -20,7 +20,7 @@ def test_optimizer_solves_a_small_dispatch():
 
     result = PulpSolver(battery).solve(market1, market2)
 
-    assert result["profit"] == 190
+    assert result["profit"] == pytest.approx(190)
     dispatch = result["dispatch"]
     assert len(dispatch) == 2
     assert dispatch[0]["discharge_market1_mw"] + dispatch[0][

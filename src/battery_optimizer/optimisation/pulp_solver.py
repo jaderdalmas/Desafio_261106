@@ -2,7 +2,7 @@ import math
 
 import pandas as pd
 from pulp import (
-    COIN_CMD,
+    HiGHS,
     LpMaximize,
     LpProblem,
     LpStatus,
@@ -34,10 +34,12 @@ class PulpSolver:
             t: model.add_variable(f"discharge1_{t}", lowBound=0) for t in range(horizon)
         }
         charge2 = {
-            t: model.add_variable(f"charge2_{t}", lowBound=0) for t in range(horizon)
+            hour: model.add_variable(f"charge2_{hour}", lowBound=0)
+            for hour in range(horizon // 2)
         }
         discharge2 = {
-            t: model.add_variable(f"discharge2_{t}", lowBound=0) for t in range(horizon)
+            hour: model.add_variable(f"discharge2_{hour}", lowBound=0)
+            for hour in range(horizon // 2)
         }
         state_of_charge = {
             t: model.add_variable(
@@ -56,42 +58,39 @@ class PulpSolver:
 
         interval_profit = []
         for t in range(horizon):
+            hour = t // 2
             interval_profit.append(
                 interval_hours
                 * (
                     discharge1[t] * prices1[t]
-                    + discharge2[t] * prices2[t]
+                    + discharge2[hour] * prices2[t]
                     - charge1[t] * prices1[t]
-                    - charge2[t] * prices2[t]
+                    - charge2[hour] * prices2[t]
                 )
             )
             model += (
-                charge1[t] + charge2[t] <= self.battery.max_charge_mw * is_charging[t]
+                charge1[t] + charge2[hour]
+                <= self.battery.max_charge_mw * is_charging[t]
             )
-            model += discharge1[t] + discharge2[t] <= self.battery.max_discharge_mw * (
-                1 - is_charging[t]
-            )
+            model += discharge1[t] + discharge2[
+                hour
+            ] <= self.battery.max_discharge_mw * (1 - is_charging[t])
             model += state_of_charge[t + 1] == (
                 state_of_charge[t]
                 + interval_hours
-                * (charge1[t] + charge2[t])
+                * (charge1[t] + charge2[hour])
                 * self.battery.charge_efficiency
                 - interval_hours
-                * (discharge1[t] + discharge2[t])
+                * (discharge1[t] + discharge2[hour])
                 / self.battery.discharge_efficiency
             )
 
-        # A Market 2 power commitment applies to both half-hour intervals.
-        for t in range(0, horizon, 2):
-            model += charge2[t] == charge2[t + 1]
-            model += discharge2[t] == discharge2[t + 1]
-
         model += lpSum(interval_profit)
         model.solve(
-            COIN_CMD(
+            HiGHS(
                 msg=False,
                 threads=1,
-                options=["randomSeed 0", "randomCbcSeed 0"],
+                random_seed=0,
             )
         )
 
@@ -101,13 +100,14 @@ class PulpSolver:
 
         dispatch = []
         for t in range(horizon):
+            hour = t // 2
             dispatch.append(
                 {
                     "timestamp": market1.iloc[t]["timestamp"],
                     "charge_market1_mw": value(charge1[t]),
                     "discharge_market1_mw": value(discharge1[t]),
-                    "charge_market2_mw": value(charge2[t]),
-                    "discharge_market2_mw": value(discharge2[t]),
+                    "charge_market2_mw": value(charge2[hour]),
+                    "discharge_market2_mw": value(discharge2[hour]),
                     "soc_start_mwh": value(state_of_charge[t]),
                     "soc_end_mwh": value(state_of_charge[t + 1]),
                     "profit_gbp": value(interval_profit[t]),

@@ -30,6 +30,11 @@ pip install -e .
 python -m battery_optimizer.cli.main
 ```
 
+The solver runs CBC with a single thread and fixed random seeds. It writes the
+half-hourly dispatch to `results/dispatch.csv`; use `--output path/to/file.csv`
+to choose a different location. Re-running with the same input workbooks and
+solver version produces the same schedule.
+
 The CLI reads `data/battery_parameters.xlsx` and `data/market_prices.xlsx`.
 The battery workbook supplies capacity, charge/discharge rates, and efficiency
 losses. Since it does not specify an initial state of charge, the optimizer

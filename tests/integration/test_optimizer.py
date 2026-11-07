@@ -29,6 +29,33 @@ def test_optimizer_solves_a_small_dispatch():
     assert dispatch[1]["soc_end_mwh"] == pytest.approx(0)
 
 
+def test_optimizer_returns_reproducible_results():
+    battery = Battery(
+        capacity_mwh=4,
+        max_charge_mw=2,
+        max_discharge_mw=2,
+        initial_soc_mwh=2,
+        charge_efficiency=0.95,
+        discharge_efficiency=0.95,
+    )
+    timestamps = pd.date_range("2024-01-01", periods=4, freq="30min")
+    market1 = pd.DataFrame({"timestamp": timestamps, "price": [10, 20, 100, 30]})
+    market2 = pd.DataFrame({"timestamp": timestamps, "price": [15, 15, 25, 25]})
+    solver = PulpSolver(battery)
+
+    first = solver.solve(market1, market2)
+    second = solver.solve(market1, market2)
+
+    assert first["profit"] == pytest.approx(second["profit"])
+    pd.testing.assert_frame_equal(
+        pd.DataFrame(first["dispatch"]),
+        pd.DataFrame(second["dispatch"]),
+        check_exact=False,
+        rtol=0,
+        atol=1e-9,
+    )
+
+
 def test_optimizer_shares_power_and_energy_between_markets():
     battery = Battery(
         capacity_mwh=4,

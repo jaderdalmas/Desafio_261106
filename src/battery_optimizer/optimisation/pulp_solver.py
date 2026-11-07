@@ -87,7 +87,13 @@ class PulpSolver:
             model += discharge2[t] == discharge2[t + 1]
 
         model += lpSum(interval_profit)
-        model.solve(COIN_CMD(msg=False))
+        model.solve(
+            COIN_CMD(
+                msg=False,
+                threads=1,
+                options=["randomSeed 0", "randomCbcSeed 0"],
+            )
+        )
 
         status = LpStatus[model.status]
         if status != "Optimal":

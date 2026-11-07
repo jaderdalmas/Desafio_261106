@@ -1,0 +1,4 @@
+capacity_mwh: 10
+max_charge_mw: 5
+max_discharge_mw: 5
+initial_soc_mwh: 5

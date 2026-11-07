@@ -1,0 +1,12 @@
+pandas
+numpy
+pulp
+matplotlib
+pyyaml
+fastapi
+uvicorn
+pytest
+ruff
+mypy
+black
+hypothesis

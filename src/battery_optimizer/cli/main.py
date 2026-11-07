@@ -11,31 +11,17 @@ from battery_optimizer.infrastructure.excel_loader import (
 
 def main():
 
-    battery = ExcelLoader.load_battery(
-        "data/battery_parameters.xlsx"
-    )
+    battery = ExcelLoader.load_battery("data/battery_parameters.xlsx")
 
-    market1, market2 = ExcelLoader.load_markets(
-        "data/market_prices.xlsx"
-    )
+    market1, market2 = ExcelLoader.load_markets("data/market_prices.xlsx")
 
-    market2 = (
-        TimelineService
-        .expand_hourly_market(
-            market2
-        )
-    )
+    market2 = TimelineService.expand_hourly_market(market2)
     market2 = TimelineService.align_hourly_market(market1, market2)
 
-    result = (
-        OptimiseDispatch(battery)
-        .execute(
-            market1,
-            market2,
-        )
-    )
+    result = OptimiseDispatch(battery).execute(market1, market2)
 
-    print(result)
+    print(f"Maximum profit: £{result['profit']:,.2f}")
+    print(f"Dispatch intervals: {len(result['dispatch'])}")
 
 
 if __name__ == "__main__":

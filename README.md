@@ -35,7 +35,9 @@ The battery workbook supplies capacity, charge/discharge rates, and efficiency
 losses. Since it does not specify an initial state of charge, the optimizer
 starts at 50% of capacity. The market workbook must contain sheets named
 `Half-hourly data` and `Hourly data`. Hourly prices are expanded to
-half-hourly intervals before optimization.
+half-hourly intervals before optimization. The optimization result includes the
+maximum profit and a half-hourly dispatch schedule, with power attributed to
+each market and the battery state of charge at both ends of each interval.
 
 ## Tests
 

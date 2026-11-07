@@ -40,6 +40,8 @@ inputs and output path validates the saved rows and appends the remaining
 intervals. Existing rows that do not match the newly computed schedule are
 rejected rather than overwritten. The full-horizon optimization is recalculated
 on rerun; saved rows let the CLI resume output writing, not the solver itself.
+If the output already contains every interval for the market timeline, the CLI
+reports the saved profit without rerunning the optimization.
 The CLI displays solver progress and limits optimization to 60 seconds by
 default. If it finds a feasible schedule but cannot prove it optimal in that
 time, it saves and reports the best feasible schedule. Use

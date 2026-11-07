@@ -1,5 +1,6 @@
 import argparse
 import csv
+import math
 from pathlib import Path
 
 import pandas as pd
@@ -22,6 +23,56 @@ def _format_dispatch_row(dispatch_row: dict[str, object]) -> list[str]:
         else f"{float(value):.10f}"
         for field, value in dispatch_row.items()
     ]
+
+
+def _completed_dispatch_profit(output: Path, timestamps: pd.Series) -> float | None:
+    if not output.exists() or output.stat().st_size == 0:
+        return None
+
+    expected_fields = [
+        "timestamp",
+        "charge_market1_mw",
+        "discharge_market1_mw",
+        "charge_market2_mw",
+        "discharge_market2_mw",
+        "soc_start_mwh",
+        "soc_end_mwh",
+        "profit_gbp",
+    ]
+    profits = []
+    with output.open("r", newline="", encoding="utf-8") as file:
+        reader = csv.reader(file)
+        if next(reader, None) != expected_fields:
+            return None
+
+        for index, row in enumerate(reader):
+            if index >= len(timestamps):
+                raise ValueError(f"existing result file has extra rows: {output}")
+            if len(row) != len(expected_fields):
+                raise ValueError(f"existing result file has an invalid row: {index + 1}")
+            expected_timestamp = pd.Timestamp(timestamps.iloc[index]).strftime(
+                "%Y-%m-%dT%H:%M:%S"
+            )
+            if row[0] != expected_timestamp:
+                raise ValueError(
+                    f"existing result file timestamp differs at row {index + 1}: "
+                    f"{output}"
+                )
+            try:
+                values = [float(value) for value in row[1:]]
+            except ValueError as error:
+                raise ValueError(
+                    f"existing result file has a non-numeric value at row {index + 1}"
+                ) from error
+            if not all(math.isfinite(value) for value in values):
+                raise ValueError(
+                    f"existing result file has a non-finite value at row {index + 1}"
+                )
+            profits.append(values[-1])
+
+    if len(profits) != len(timestamps):
+        return None
+    return sum(profits)
 
 
 def _save_dispatch_resumable(output: Path, dispatch: list[dict[str, object]]) -> None:
@@ -91,6 +142,13 @@ def main(argv: list[str] | None = None):
     market2 = TimelineService.expand_hourly_market(market2)
     market2 = TimelineService.align_hourly_market(market1, market2)
 
+    existing_profit = _completed_dispatch_profit(args.output, market1["timestamp"])
+    if existing_profit is not None:
+        print(f"Dispatch already complete. Saved profit: GBP {existing_profit:,.2f}")
+        print(f"Dispatch intervals: {len(market1)}")
+        print(f"Dispatch saved to: {args.output}")
+        return
+
     print(
         f"Optimizing {len(market1):,} dispatch intervals "
         f"(time limit: {args.time_limit:g}s)...",
@@ -106,7 +164,7 @@ def main(argv: list[str] | None = None):
     dispatch = result["dispatch"]
     _save_dispatch_resumable(args.output, dispatch)
     outcome = "Maximum profit" if result["optimal"] else "Best feasible profit"
-    print(f"{outcome}: £{result['profit']:,.2f}")
+    print(f"{outcome}: GBP {result['profit']:,.2f}")
     if not result["optimal"]:
         print("Optimality was not proven before the time limit.")
     print(f"Dispatch intervals: {len(dispatch)}")
